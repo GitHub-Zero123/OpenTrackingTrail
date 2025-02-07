@@ -1,3 +1,25 @@
 # -*- coding: utf-8 -*-
 from QuModLibs.Client import *
+from Modules.TrackingTrail.Client import BaseKnifeLightEffectRenderer
+lambda: "OpenTrackingTrail Client"
+# 2025/02/08
 
+# 顺带给生物也绑定一份
+@BaseKnifeLightEffectRenderer.regEntity("minecraft:husk")
+class TestKLRenderer(BaseKnifeLightEffectRenderer):
+    """ 测试刀光渲染器 """
+    def onGameTick(self):
+        BaseKnifeLightEffectRenderer.onGameTick(self)
+        if True:    #  在此处编写你的渲染条件 为了测试 这里始终开启
+                    # ["rightarm", "rightitem"] 为绑定的骨骼/定位器名字 可根据实际需求在模型上调整
+            self.createBinder("default", ["rightarm", "rightitem"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 1, "width": 1, "offset": 0, "texture": "open_knife_light", "bloom": False})
+        else:
+            self.removeAllBinder()
+
+@Listen(Events.AddPlayerAOIClientEvent)
+def AddPlayerAOIClientEvent(args={}):
+    # 截至当前版本QuModLibs暂未提供组件快捷玩家注册装饰器 需自行监听
+    data = Events.AddPlayerAOIClientEvent(args)
+    TestKLRenderer().bind(data.playerId)
+
+# PS: 为避免多MOD冲突问题 若需大量魔改 请重新命名模型/材质/着色器相关名称 避免ODR问题

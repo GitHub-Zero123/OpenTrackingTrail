@@ -105,14 +105,18 @@ class BaseKnifeLightEffect:
         for i in oldList:
             newList.append(i)
         self.knifeList = newList
-        while len(self.knifeList) > self.length:
-            if not self.destroyKnifeFrag():
-                break
+        if self.knifeList:
+            while len(self.knifeList) > self.length:
+                if not self.destroyKnifeFrag():
+                    break
 
     def destroyKnifeFrag(self):
-        endFrag = self.knifeList[-1]
-        self._modelPool.free(endFrag[0], True)
-        self.knifeList.pop()
+        if self.knifeList:
+            endFrag = self.knifeList[-1]
+            self._modelPool.free(endFrag[0], True)
+            self.knifeList.pop()
+            return True
+        return False
 
     def renderKnifeModel(self, fragModel, nowKnifeFrag, lastKnifeFrag, index, mix_begin_pos, mix_end_pos):
         Px, Py, Pz = clientApi.GetEngineCompFactory().CreatePos(self.entityId).GetPos()
