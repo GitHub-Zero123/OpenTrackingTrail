@@ -6,6 +6,7 @@ from ...QuModLibs.Modules.ModelRender.Client import QFreeModelPool, QNativeEntit
 from ...QuModLibs.Modules.EventsPool.Client import POOL_ListenForEvent, POOL_UnListenForEvent
 from copy import copy
 import math
+lambda: "By 棱花 && KID团队 请在遵循协议的前提下使用"
 
 clientComp = clientApi.GetEngineCompFactory()
 
