@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
-from ...QuModLibs.Modules.ModelRender.Client import QFreeModelPool
+from ...QuModLibs.Client import *
+from ...QuModLibs.Util import TRY_EXEC_FUN
+from ...QuModLibs.Modules.EntityComps.Client import QBaseEntityComp
+from ...QuModLibs.Modules.ModelRender.Client import QFreeModelPool, QNativeEntityModel
+from ...QuModLibs.Modules.EventsPool.Client import POOL_ListenForEvent, POOL_UnListenForEvent
+from copy import copy
+import math
 
+clientComp = clientApi.GetEngineCompFactory()
 
-class BaseTrackingTrailEffect:
+class BaseKnifeLightEffect:
     """ 刀光效果组件 绘制刀光(N例模式) """
     def __init__(self):
         self._modelPool = QFreeModelPool("open_knife_light")
         self.binderArgs = {}
         self.customArgs = {}
         self.entityId = None
-        self.boneObj = KnifeLightEffectRenderer.BoneBinder("", "")
+        self.boneObj = BaseKnifeLightEffectRenderer.BoneBinder("", "")
         self.knifeList = list()
         self.length = 30
         self.default_length = 30
@@ -57,9 +64,8 @@ class BaseTrackingTrailEffect:
             self.renderKnifeModel(fragModel, nowKnifeFrag, lastKnifeFrag, index, mix_begin_pos, mix_end_pos)
 
     def onCreate(self):
-        self.length = self.binderArgs["length"]*30
-        self.default_length = self.binderArgs["length"]*30
-        pass
+        self.length = self.binderArgs["length"] * 30
+        self.default_length = self.binderArgs["length"] * 30
 
     def FreeModel(self):
         if len(self.knifeList) > 1:
@@ -74,7 +80,6 @@ class BaseTrackingTrailEffect:
         self.free = True
         POOL_ListenForEvent("OnScriptTickNonChaseFrameClient", self.renderUpdate)
         POOL_ListenForEvent("OnScriptTickClient", self.FreeModel)
-        pass
 
     def createKnifeFrag(self):
         self.length = int(self.default_length*clientApi.GetEngineCompFactory().CreateGame(levelId).GetFps() * 0.007)
@@ -89,13 +94,9 @@ class BaseTrackingTrailEffect:
             self.length = 0
         if self.free:
             width = 0.001
-        direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((locator_pos_end[0] - locator_pos_begin[0],
-                                                                     locator_pos_end[1] - locator_pos_begin[1],
-                                                                     locator_pos_end[2] - locator_pos_begin[2])))
-        bone_pos = locator_pos_begin[0] + direction[0] * offset, locator_pos_begin[1] + \
-                   direction[1] * offset, locator_pos_begin[2] + direction[2] * offset
-        target_bone_pos = bone_pos[0] + direction[0] * width, bone_pos[1] + direction[1] * \
-                          width, bone_pos[2] + direction[2] * width
+        direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((locator_pos_end[0] - locator_pos_begin[0], locator_pos_end[1] - locator_pos_begin[1], locator_pos_end[2] - locator_pos_begin[2])))
+        bone_pos = locator_pos_begin[0] + direction[0] * offset, locator_pos_begin[1] + direction[1] * offset, locator_pos_begin[2] + direction[2] * offset
+        target_bone_pos = bone_pos[0] + direction[0] * width, bone_pos[1] + direction[1] * width, bone_pos[2] + direction[2] * width
         modelId = self._modelPool.malloc(True)
         clientApi.GetEngineCompFactory().CreateModel(levelId).SetTexture(self.binderArgs["texture"], modelId)
         if self.binderArgs["bloom"]:
@@ -121,9 +122,9 @@ class BaseTrackingTrailEffect:
         nowEndPos = nowKnifeFrag[2]
         lastBeginPos = lastKnifeFrag[1]
         lastEndPos = lastKnifeFrag[2]
-        ClientComp.CreateModel(levelId).SetFreeModelPos(fragModel, nowBeginPos[0], nowBeginPos[1], nowBeginPos[2])
-        ClientComp.CreateModel(levelId).SetFreeModelScale(fragModel, 1, 1, 1)
-        ClientComp.CreateModel(levelId).SetFreeModelRot(fragModel, 0, 0, 0)
+        clientComp.CreateModel(levelId).SetFreeModelPos(fragModel, nowBeginPos[0], nowBeginPos[1], nowBeginPos[2])
+        clientComp.CreateModel(levelId).SetFreeModelScale(fragModel, 1, 1, 1)
+        clientComp.CreateModel(levelId).SetFreeModelRot(fragModel, 0, 0, 0)
 
         last_progress = round(1-(index+3)/float(len(self.knifeList)), 2)
 
@@ -181,12 +182,10 @@ class BaseTrackingTrailEffect:
 
         ValueDict = [-1, 1]
 
-        ClientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 1, (now_begin_x+start_r*0.0001*ValueDict[int(now_begin_x >= 0)], now_begin_y+start_g*0.0001*ValueDict[int(now_begin_y >= 0)], now_begin_z+start_b*0.0001*ValueDict[int(now_begin_z >= 0)], last_progress*100.0+target_progress))
-        ClientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 2, (now_end_x+end_r*0.0001*ValueDict[int(now_end_x >= 0)], now_end_y+end_g*0.0001*ValueDict[int(now_end_y >= 0)], now_end_z+end_b*0.0001*ValueDict[int(now_end_z >= 0)], mix_end_x+mix_begin_x))
-        ClientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 3, (last_begin_x+start_a*0.0001*ValueDict[int(last_begin_x >= 0)], last_begin_y+end_a*0.0001*ValueDict[int(last_begin_y >= 0)], last_begin_z, mix_end_y+mix_begin_y))
-        ClientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 4, (last_end_x, last_end_y, last_end_z, mix_end_z+mix_begin_z))
-        pass
-
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 1, (now_begin_x+start_r*0.0001*ValueDict[int(now_begin_x >= 0)], now_begin_y+start_g*0.0001*ValueDict[int(now_begin_y >= 0)], now_begin_z+start_b*0.0001*ValueDict[int(now_begin_z >= 0)], last_progress*100.0+target_progress))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 2, (now_end_x+end_r*0.0001*ValueDict[int(now_end_x >= 0)], now_end_y+end_g*0.0001*ValueDict[int(now_end_y >= 0)], now_end_z+end_b*0.0001*ValueDict[int(now_end_z >= 0)], mix_end_x+mix_begin_x))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 3, (last_begin_x+start_a*0.0001*ValueDict[int(last_begin_x >= 0)], last_begin_y+end_a*0.0001*ValueDict[int(last_begin_y >= 0)], last_begin_z, mix_end_y+mix_begin_y))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 4, (last_end_x, last_end_y, last_end_z, mix_end_z+mix_begin_z))
 
 class BaseKnifeLightEffectRenderer(QBaseEntityComp):
     """ 刀光特效渲染器通用组件类 管理目标实体持有N个刀光 """
@@ -206,7 +205,7 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
             """ locators定位器表 用于计算自有坐标系 """
             self.customArgs = {}
             """ 自定义参数表 """
-            self._effectSet = set()  # type: set[KnifeLightEffect]
+            self._effectSet = set()  # type: set[BaseKnifeLightEffect]
             """ 刀光效果集合 """
             self._boneObjMap = {}  # type: dict[str, QNativeEntityModel.MinecraftBone]
 
@@ -257,7 +256,7 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
             return effectObj
 
         def freeEffect(self, obj):
-            # type: (KnifeLightEffect) -> None
+            # type: (BaseKnifeLightEffect) -> None
             """ 释放刀光效果 """
             if obj in self._effectSet:
                 self._effectSet.remove(obj)
@@ -283,7 +282,7 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
 
     def __init__(self):
         QBaseEntityComp.__init__(self)
-        self._binderMap = {}  # type: dict[str, KnifeLightEffectRenderer.BoneBinder]
+        self._binderMap = {}  # type: dict[str, BaseKnifeLightEffectRenderer.BoneBinder]
         self._fpsListenState = False
 
     def listenFPSEvent(self):
@@ -299,16 +298,17 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
 
     def getRenderUpdateMode(self):
         """ 获取渲染更新模式 0.Tick 1.FPS """
-        return KnifeLightEffectRenderer._USE_FPS
+        return BaseKnifeLightEffectRenderer._USE_FPS
 
     def createBinder(self, boneName, locators=[], customArgs={}):
-        # type: (str, list[str], dict) -> KnifeLightEffectRenderer.BoneBinder
+        # type: (str, list[str], dict) -> BaseKnifeLightEffectRenderer.BoneBinder
         """ 创建一个绑定定位器 重复创建将会不生效
             - BoneName不代表真的是某个Bone仅用于区分键值储存 具体以locators为准
         """
         if boneName in self._binderMap:
             binder = self._binderMap[boneName]
             return binder
+        # 青云非要用DICT传数据 感觉不如对象模型
         binder = self.__class__.BoneBinder(self.entityId, boneName, locators)
         customArgs["width"] = customArgs.get("width", 0.5)
         customArgs["offset"] = customArgs.get("offset", 0)
@@ -323,7 +323,7 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
         return binder
 
     def getBinder(self, boneName):
-        # type: (str) -> KnifeLightEffectRenderer.BoneBinder | None
+        # type: (str) -> BaseKnifeLightEffectRenderer.BoneBinder | None
         """ 基于BoneName获取相关绑定器 """
         return self._binderMap.get(boneName, None)
 
@@ -350,7 +350,7 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
     def onGameTick(self):
         QBaseEntityComp.onGameTick(self)
         # 30Tick事件
-        if self.getRenderUpdateMode() == KnifeLightEffectRenderer._USE_TICK:
+        if self.getRenderUpdateMode() == BaseKnifeLightEffectRenderer._USE_TICK:
             # 启用Tick模式时 取消FPS事件
             self.unListenFPSEvent()
             self.updateAllBinder()
@@ -370,35 +370,14 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
             return
         self.removeAllBinder()
 
+# class BaseEntityAttackKnifeLightRenderer(BaseKnifeLightEffectRenderer):
+#     """ 实体攻击刀光渲染器 """
+#     def __init__(self):
+#         BaseKnifeLightEffectRenderer.__init__(self)
 
-class BaseEntityAttackKnifeLightRenderer(BaseKnifeLightEffectRenderer):
-    """ 实体攻击刀光渲染器 """
-
-    class BoneBinder(BaseKnifeLightEffectRenderer.BoneBinder):
-        """ 重新实现的绑定器 支持表达式等参数 """
-
-        def __init__(self, entityId, boneName, locators):
-            BaseKnifeLightEffectRenderer.BoneBinder.__init__(self, entityId, boneName, locators)
-            #self.quLangParser = std.QuLangParser(entityId)
-
-        def renderUpdate(self, moveTime=0.033):
-            BaseKnifeLightEffectRenderer.BoneBinder.renderUpdate(self, moveTime)
-            #print("RENDER UPDATE {}".format(moveTime))
-
-        def onCreate(self):
-            BaseKnifeLightEffectRenderer.BoneBinder.onCreate(self)
-            print("ON CREATE")
-
-        def onFree(self):
-            BaseKnifeLightEffectRenderer.BoneBinder.onFree(self)
-            print("ON FREE")
-
-    def __init__(self):
-        BaseKnifeLightEffectRenderer.__init__(self)
-
-    def onGameTick(self):
-        BaseKnifeLightEffectRenderer.onGameTick(self)
-        if True:
-            self.createBinder("rightItem", ["right_begin", "right_end"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 1, "width": 1, "offset": 0, "texture": "knife_light", "bloom": False})
-        else:
-            self.removeAllBinder()
+#     def onGameTick(self):
+#         BaseKnifeLightEffectRenderer.onGameTick(self)
+#         if True:    #  在此处编写你的渲染条件
+#             self.createBinder("rightItem", ["right_begin", "right_end"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 1, "width": 1, "offset": 0, "texture": "knife_light", "bloom": False})
+#         else:
+#             self.removeAllBinder()
