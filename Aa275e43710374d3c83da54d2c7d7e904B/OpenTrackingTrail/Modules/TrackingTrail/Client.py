@@ -88,6 +88,15 @@ class BaseKnifeLightEffect:
         newList = list()
         locator_pos_begin = self.boneObj.getBonePos(self.boneObj.locators[0])
         locator_pos_end = self.boneObj.getBonePos(self.boneObj.locators[1])
+        rx, ry = self.binderArgs["rotate"]
+        mx, my, mz = locator_pos_end[0]-locator_pos_begin[0], locator_pos_end[1]-locator_pos_begin[1], locator_pos_end[2]-locator_pos_begin[2]
+        nmz = mz * math.cos(math.radians(rx)) - my * math.sin(math.radians(rx))
+        nmy = mz * math.sin(math.radians(rx)) + my * math.cos(math.radians(rx))
+        mx, my, mz = mx, nmy, nmz
+        nmx = mx * math.cos(math.radians(ry)) - mz * math.sin(math.radians(ry))
+        nmz = mx * math.sin(math.radians(ry)) + mz * math.cos(math.radians(ry))
+        mx, my, mz = nmx, my, nmz
+        locator_pos_end = locator_pos_begin[0] + mx, locator_pos_begin[1] + my, locator_pos_begin[2] + mz
         length = self.getLength(locator_pos_begin, locator_pos_end)
         width = copy(self.binderArgs["width"])
         offset = copy(self.binderArgs["offset"])
@@ -322,6 +331,7 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
         customArgs["endColor"] = customArgs.get("endColor", (1, 1, 1, 0))
         customArgs["texture"] = customArgs.get("texture", "knife_light")
         customArgs["bloom"] = customArgs.get("bloom", False)
+        customArgs["rotate"] = customArgs.get("rotate", (0, 0))
         binder.customArgs = customArgs
         self._binderMap[boneName] = binder
         binder.onCreate()
@@ -383,6 +393,6 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
 #     def onGameTick(self):
 #         BaseKnifeLightEffectRenderer.onGameTick(self)
 #         if True:    #  在此处编写你的渲染条件
-#             self.createBinder("rightItem", ["right_begin", "right_end"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 1, "width": 1, "offset": 0, "texture": "knife_light", "bloom": False})
+#             self.createBinder("rightItem", ["right_begin", "right_end"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 1, "width": 1, "offset": 0, "texture": "knife_light", "bloom": False, "rotate": (0, 0)})
 #         else:
 #             self.removeAllBinder()
