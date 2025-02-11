@@ -86,6 +86,10 @@ class BaseKnifeLightEffect:
         POOL_ListenForEvent("OnScriptTickClient", self.FreeModel)
 
     def createKnifeFrag(self):
+        if not clientApi.GetEngineCompFactory().CreateGame(levelId).HasEntity(self.entityId):
+            self._modelPool.freeAllModel()
+            self.knifeList = []
+            return 
         self.length = int(self.default_length*clientApi.GetEngineCompFactory().CreateGame(levelId).GetFps() * 0.007)
         oldList = copy(self.knifeList)
         newList = list()
