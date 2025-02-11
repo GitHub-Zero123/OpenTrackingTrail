@@ -69,6 +69,9 @@ class BaseKnifeLightEffect:
         self.default_length = self.binderArgs["length"] * 30
 
     def FreeModel(self):
+        if not clientApi.GetEngineCompFactory().CreateGame(levelId).HasEntity(self.entityId):
+            self._modelPool.freeAllModel()
+            self.knifeList = []
         if len(self.knifeList) > 1:
             self.length -= max(1, self.default_length*0.01)
             self.default_length -= max(1, self.default_length*0.01)
