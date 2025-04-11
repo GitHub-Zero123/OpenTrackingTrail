@@ -139,27 +139,24 @@ void main()
 	POS4 entitySpacePosition;
 	POS4 entitySpaceNormal;
 	vec4 POSition = POSITION;
-	vec3 now_begin_pos = vec3(float(int(EXTRA_VECTOR1.x*1000.f))*0.001f, float(int(EXTRA_VECTOR1.y*1000.f))*0.001f, float(int(EXTRA_VECTOR1.z*1000.f))*0.001f);
-	vec3 now_end_pos = vec3(float(int(EXTRA_VECTOR2.x*1000.f))*0.001f, float(int(EXTRA_VECTOR2.y*1000.f))*0.001f, float(int(EXTRA_VECTOR2.z*1000.f))*0.001f);
-	vec3 last_begin_pos = vec3(float(int(EXTRA_VECTOR3.x*1000.f))*0.001f, float(int(EXTRA_VECTOR3.y*1000.f))*0.001f, float(int(EXTRA_VECTOR3.z*1000.f))*0.001f);
-	vec3 last_end_pos = vec3(float(int(EXTRA_VECTOR4.x*1000.f))*0.001f, float(int(EXTRA_VECTOR4.y*1000.f))*0.001f, float(int(EXTRA_VECTOR4.z*1000.f))*0.001f);
-	vec3 EXTRA_VECTOR5_type = vec3(float(int(EXTRA_VECTOR2.w*0.001f))-2.f, float(int(EXTRA_VECTOR3.w*0.001f))-2.f, float(int(EXTRA_VECTOR4.w*0.001f))-2.f);
-	vec3 EXTRA_VECTOR5_value = vec3((float(int(EXTRA_VECTOR2.w))*0.001f-float(int(float(int(EXTRA_VECTOR2.w))*0.001f)))*10.f, (float(int(EXTRA_VECTOR3.w))*0.001f-float(int(float(int(EXTRA_VECTOR3.w))*0.001f)))*10.f, (float(int(EXTRA_VECTOR4.w))*0.001f-float(int(float(int(EXTRA_VECTOR4.w))*0.001f)))*10.f);
-	vec3 EXTRA_VECTOR6_type = vec3(float(int((EXTRA_VECTOR2.w-float(int(EXTRA_VECTOR2.w)))*10.f))-2.f, float(int((EXTRA_VECTOR3.w-float(int(EXTRA_VECTOR3.w)))*10.f))-2.f, float(int((EXTRA_VECTOR4.w-float(int(EXTRA_VECTOR4.w)))*10.f))-2.f);
-	vec3 EXTRA_VECTOR6_value = vec3((EXTRA_VECTOR2.w*10.f-float(int(EXTRA_VECTOR2.w*10.f)))*10.f, (EXTRA_VECTOR3.w*10.f-float(int(EXTRA_VECTOR3.w*10.f)))*10.f, (EXTRA_VECTOR4.w*10.f-float(int(EXTRA_VECTOR4.w*10.f)))*10.f);
-	vec3 now_z_end_pos = EXTRA_VECTOR5_type*EXTRA_VECTOR5_value;
-	vec3 now_z_begin_pos = EXTRA_VECTOR6_type*EXTRA_VECTOR6_value;
-	POSition.z *= 0.01641f;
-	POSition.x *= 0.01641f;
+	vec3 now_begin_pos = vec3(0.f);
+	vec3 now_end_pos = EXTRA_VECTOR1.xyz;
+	vec3 last_begin_pos = EXTRA_VECTOR2.xyz;
+	vec3 last_end_pos = EXTRA_VECTOR3.xyz;
+	vec3 mid_end_pos = EXTRA_VECTOR4.xyz;
+	POSition.z *= 0.01642f;
+	POSition.x *= 0.01642f;
 	vec3 direct_last = normalize(last_end_pos-last_begin_pos);
 	vec3 direct_now = normalize(now_end_pos-now_begin_pos);
-	vec3 direct_now_z = normalize(now_z_end_pos-now_z_begin_pos);
-	vec3 last_self_pos = (last_begin_pos-now_begin_pos);
-	vec3 z_self_pos = (now_z_begin_pos-now_begin_pos);
-	POSition.x *= length(now_begin_pos-now_end_pos);
-	vec3 POSition1 = mix(direct_now * POSition.x, last_self_pos + direct_last * POSition.x, POSition.z);
-	vec3 POSition2 = mix(direct_now * POSition.x, z_self_pos + direct_now_z * POSition.x, POSition.z);
-	POSition.xyz = mix(POSition2, POSition1, pow(POSition.z, 2.f));
+	vec3 mid_begin_pos = mid_end_pos-normalize(mid_end_pos-last_begin_pos)*length(mid_end_pos-last_begin_pos);
+	vec3 direct_mix = normalize(mid_end_pos-mid_begin_pos);
+	float NewPX_now = POSition.x*length(now_begin_pos-now_end_pos);
+	float NewPX_end = POSition.x*length(last_begin_pos-last_end_pos);
+	float NewPosX = POSition.x*length(mid_end_pos-mid_begin_pos);
+	vec3 POSition1 = mix(direct_now * NewPX_now, last_begin_pos + direct_last * NewPX_end, POSition.z);
+	vec3 POSition2 = mix(direct_now * NewPX_now, mid_begin_pos + direct_mix * NewPosX, POSition.z);
+	POSition.xyz = mix(POSition2, POSition1, POSition.z);
+	//POSition.xyz = mix(POSition2, POSition1, 1.f);
 
 
 #ifdef USE_SKINNING
