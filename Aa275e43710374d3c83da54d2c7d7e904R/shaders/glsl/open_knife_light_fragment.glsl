@@ -32,9 +32,9 @@ void main()
 		discard;
 	}
 
-	highp vec4 start_color = vec4(abs(EXTRA_VECTOR1.x-float(int(EXTRA_VECTOR1.x*1000.f))*0.001f)*10000.f, abs(EXTRA_VECTOR1.y-float(int(EXTRA_VECTOR1.y*1000.f))*0.001f)*10000.f, abs(EXTRA_VECTOR1.z-float(int(EXTRA_VECTOR1.z*1000.f))*0.001f)*10000.f, abs(EXTRA_VECTOR3.x-float(int(EXTRA_VECTOR3.x*1000.f))*0.001f)*10000.f);
+	highp vec4 start_color = vec4(floor(EXTRA_VECTOR2.w*0.1f)*0.01f, floor(fract(EXTRA_VECTOR2.w*0.1f)*100.f)*0.01f, fract(fract(EXTRA_VECTOR2.w*0.1f)*100.f), floor(EXTRA_VECTOR4.w)*0.01f);
 
-	highp vec4 end_color = vec4(abs(EXTRA_VECTOR2.x-float(int(EXTRA_VECTOR2.x*1000.f))*0.001f)*10000.f, abs(EXTRA_VECTOR2.y-float(int(EXTRA_VECTOR2.y*1000.f))*0.001f)*10000.f, abs(EXTRA_VECTOR2.z-float(int(EXTRA_VECTOR2.z*1000.f))*0.001f)*10000.f, abs(EXTRA_VECTOR3.y-float(int(EXTRA_VECTOR3.y*1000.f))*0.001f)*10000.f);
+	highp vec4 end_color = vec4(floor(EXTRA_VECTOR3.w*0.1f)*0.01f, floor(fract(EXTRA_VECTOR3.w*0.1f)*100.f)*0.01f, fract(fract(EXTRA_VECTOR3.w*0.1f)*100.f), fract(EXTRA_VECTOR4.w));
 	
 	color.rgb *= mix(end_color.rgb, start_color.rgb, mix(last_progress, target_progress, uv.y));
 
