@@ -6,12 +6,14 @@ from ...QuModLibs.Modules.ModelRender.Client import QFreeModelPool, QNativeEntit
 from ...QuModLibs.Modules.EventsPool.Client import POOL_ListenForEvent, POOL_UnListenForEvent
 from copy import copy
 import math
+import time
 lambda: "By 棱花 && KID团队 请在遵循协议的前提下使用"
 
 clientComp = clientApi.GetEngineCompFactory()
 
 class BaseKnifeLightEffect:
     """ 刀光效果组件 绘制刀光(N例模式) """
+
     def __init__(self):
         self._modelPool = QFreeModelPool("open_knife_light")
         self.binderArgs = {}
@@ -22,13 +24,16 @@ class BaseKnifeLightEffect:
         self.length = 30
         self.default_length = 30
         self.free = False
+        self.fps = 120.0
+        self.tickTime = 1.0 / self.fps
+        self.lastTick = 0
 
     def getLength(self, value1, value2):
         pix = 0
         end_value = 0
         for v1 in value1:
             v2 = value2[pix]
-            end_value += pow(v2-v1, 2)
+            end_value += pow(v2 - v1, 2)
             pix += 1
         return math.sqrt(end_value)
 
@@ -37,44 +42,49 @@ class BaseKnifeLightEffect:
         newValue = []
         for v1 in value1:
             v2 = value2[pix]
-            newValue.append((v2-v1)*t+v1)
+            newValue.append((v2 - v1) * t + v1)
             pix += 1
         return tuple(newValue)
 
     def renderUpdate(self, moveTime=0.033):
+        if self.lastTick and time.time() - self.lastTick <= self.tickTime:
+            return
+        self.lastTick = time.time()
         self.createKnifeFrag()
         for index in range(0, len(self.knifeList)):
-            if index >= len(self.knifeList)-1: return
+            if index >= len(self.knifeList) - 1: continue
             nowKnifeFrag = self.knifeList[index]
-            lastKnifeFrag = self.knifeList[index+1]
-            mix_begin_pos = self.mix(lastKnifeFrag[1], nowKnifeFrag[1], 0.5)
-            mix_end_pos = self.mix(lastKnifeFrag[2], nowKnifeFrag[2], 0.5)
+            lastKnifeFrag = self.knifeList[index + 1]
             fragModel = nowKnifeFrag[0]
-            if index + 3 <= len(self.knifeList):
-                l_lastKnifeFrag = self.knifeList[index + 2]
-                last_end_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((lastKnifeFrag[2][0] - l_lastKnifeFrag[2][0], lastKnifeFrag[2][1] - l_lastKnifeFrag[2][1], lastKnifeFrag[2][2] - l_lastKnifeFrag[2][2])))
-                now_end_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((nowKnifeFrag[2][0] - lastKnifeFrag[2][0], nowKnifeFrag[2][1] - lastKnifeFrag[2][1], nowKnifeFrag[2][2] - lastKnifeFrag[2][2])))
-                mix_end_direction = self.mix(last_end_direction, now_end_direction, 0)
-                length = self.getLength(nowKnifeFrag[2], lastKnifeFrag[2]) * 0.5
-                mix_end_pos = lastKnifeFrag[2][0] + mix_end_direction[0] * length, lastKnifeFrag[2][1] +  mix_end_direction[1] * length, lastKnifeFrag[2][2] + mix_end_direction[2] * length
-                last_begin_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((lastKnifeFrag[1][0] - l_lastKnifeFrag[1][0], lastKnifeFrag[1][1] - l_lastKnifeFrag[1][1], lastKnifeFrag[1][2] - l_lastKnifeFrag[1][2])))
-                now_begin_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((nowKnifeFrag[1][0] - lastKnifeFrag[1][0], nowKnifeFrag[1][1] - lastKnifeFrag[1][1], nowKnifeFrag[1][2] - lastKnifeFrag[1][2])))
-                mix_begin_direction = self.mix(last_begin_direction, now_begin_direction, 0)
-                length = self.getLength(nowKnifeFrag[1], lastKnifeFrag[1]) * 0.25
-                mix_begin_pos = lastKnifeFrag[1][0] + mix_begin_direction[0] * length, lastKnifeFrag[1][1] + mix_begin_direction[1] * length, lastKnifeFrag[1][2] + mix_begin_direction[2] * length
-            self.renderKnifeModel(fragModel, nowKnifeFrag, lastKnifeFrag, index, mix_begin_pos, mix_end_pos)
+            mix_end_pos = self.mix(lastKnifeFrag[2], nowKnifeFrag[2], 0.5)
+            if index >= 1:
+                nextKnifeFrag = self.knifeList[index - 1]
+                next_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((nowKnifeFrag[2][0] - nextKnifeFrag[2][0], nowKnifeFrag[2][1] - nextKnifeFrag[2][1], nowKnifeFrag[2][2] - nextKnifeFrag[2][2])))
+                now_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((lastKnifeFrag[2][0] - nowKnifeFrag[2][0], lastKnifeFrag[2][1] - nowKnifeFrag[2][1], lastKnifeFrag[2][2] - nowKnifeFrag[2][2])))
+                mix_end_direction = self.mix(next_direction, now_direction, 0.4)
+                length = self.getLength(nowKnifeFrag[2], lastKnifeFrag[2])
+                mix_end_pos = nowKnifeFrag[2][0] + mix_end_direction[0] * length, nowKnifeFrag[2][1] + mix_end_direction[1] * length, nowKnifeFrag[2][2] + mix_end_direction[2] * length
+            elif index <= len(self.knifeList) - 3:
+                nextKnifeFrag = self.knifeList[index + 2]
+                next_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((nextKnifeFrag[2][0] - lastKnifeFrag[2][0],nextKnifeFrag[2][1] - lastKnifeFrag[2][1],nextKnifeFrag[2][2] - lastKnifeFrag[2][2])))
+                now_direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((lastKnifeFrag[2][0] - nowKnifeFrag[2][0], lastKnifeFrag[2][1] - nowKnifeFrag[2][1], lastKnifeFrag[2][2] - nowKnifeFrag[2][2])))
+                mix_end_direction = self.mix(next_direction, now_direction, 1.5)
+                length = self.getLength(nowKnifeFrag[2], lastKnifeFrag[2])
+                mix_end_pos = nowKnifeFrag[2][0] + mix_end_direction[0] * length, nowKnifeFrag[2][1] + mix_end_direction[1] * length, nowKnifeFrag[2][2] + mix_end_direction[2] * length
+            self.renderKnifeModel(fragModel, nowKnifeFrag, lastKnifeFrag, index, mix_end_pos)
 
     def onCreate(self):
-        self.length = self.binderArgs["length"] * 30
-        self.default_length = self.binderArgs["length"] * 30
+        self.length = self.binderArgs["length"] * 15
+        self.default_length = self.binderArgs["length"] * 15
+        pass
 
     def FreeModel(self):
         if not clientApi.GetEngineCompFactory().CreateGame(levelId).HasEntity(self.entityId):
             self._modelPool.freeAllModel()
             self.knifeList = []
         if len(self.knifeList) > 1:
-            self.length -= max(1, self.default_length*0.01)
-            self.default_length -= max(1, self.default_length*0.01)
+            self.length -= max(1, self.default_length * 0.01)
+            self.default_length -= max(1, self.default_length * 0.01)
         else:
             POOL_UnListenForEvent("OnScriptTickClient", self.FreeModel)
             POOL_UnListenForEvent("OnScriptTickNonChaseFrameClient", self.renderUpdate)
@@ -84,19 +94,34 @@ class BaseKnifeLightEffect:
         self.free = True
         POOL_ListenForEvent("OnScriptTickNonChaseFrameClient", self.renderUpdate)
         POOL_ListenForEvent("OnScriptTickClient", self.FreeModel)
+        pass
 
     def createKnifeFrag(self):
         if not clientApi.GetEngineCompFactory().CreateGame(levelId).HasEntity(self.entityId):
             self._modelPool.freeAllModel()
             self.knifeList = []
-            return 
-        self.length = int(self.default_length*clientApi.GetEngineCompFactory().CreateGame(levelId).GetFps() * 0.007)
+            return
+        self.length = int(
+            self.default_length * min(clientApi.GetEngineCompFactory().CreateGame(levelId).GetFps(), 120.0) * 0.015)
+        Mx, My, Mz = (0, 0, 0)
+        length = 0
+        if self.binderArgs["motion"] != (0, 0, 0):
+            length = self.getLength((0, 0, 0), self.binderArgs["motion"])
+            Mx, My, Mz = self.binderArgs["motion"]
+            Rx, Ry = clientApi.GetEngineCompFactory().CreateRot(self.entityId).GetRot()
+            rx, ry = clientApi.GetRotFromDir((Mx, My, Mz))[0], clientApi.GetRotFromDir((Mx, My, Mz))[1] + Ry
+            Mx, My, Mz = clientApi.GetDirFromRot((rx, ry))
+        for knife_data in self.knifeList:
+            knife_data[1] = knife_data[1][0] + Mx * length, knife_data[1][1] + My * length, knife_data[1][
+                2] + Mz * length
+            knife_data[2] = knife_data[2][0] + Mx * length, knife_data[2][1] + My * length, knife_data[2][
+                2] + Mz * length
         oldList = copy(self.knifeList)
         newList = list()
         locator_pos_begin = self.boneObj.getBonePos(self.boneObj.locators[0])
         locator_pos_end = self.boneObj.getBonePos(self.boneObj.locators[1])
         rx, ry = self.binderArgs["rotate"]
-        mx, my, mz = locator_pos_end[0]-locator_pos_begin[0], locator_pos_end[1]-locator_pos_begin[1], locator_pos_end[2]-locator_pos_begin[2]
+        mx, my, mz = locator_pos_end[0] - locator_pos_begin[0], locator_pos_end[1] - locator_pos_begin[1], locator_pos_end[2] - locator_pos_begin[2]
         Orx, Ory = clientApi.GetRotFromDir((mx, my, mz))
         nmx = mx * math.cos(math.radians(-Ory)) - mz * math.sin(math.radians(-Ory))
         nmz = mx * math.sin(math.radians(-Ory)) + mz * math.cos(math.radians(-Ory))
@@ -124,9 +149,14 @@ class BaseKnifeLightEffect:
             self.length = 0
         if self.free:
             width = 0.001
-        direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((locator_pos_end[0] - locator_pos_begin[0], locator_pos_end[1] - locator_pos_begin[1], locator_pos_end[2] - locator_pos_begin[2])))
+        self_width = self.getLength(self.boneObj.getBonePos(self.boneObj.locators[1]),
+                                    self.boneObj.getBonePos(self.boneObj.locators[0])) * 2.9
+        direction = clientApi.GetDirFromRot(clientApi.GetRotFromDir((locator_pos_end[0] - locator_pos_begin[0],
+                                                                     locator_pos_end[1] - locator_pos_begin[1],
+                                                                     locator_pos_end[2] - locator_pos_begin[2])))
         bone_pos = locator_pos_begin[0] + direction[0] * offset, locator_pos_begin[1] + direction[1] * offset, locator_pos_begin[2] + direction[2] * offset
-        target_bone_pos = bone_pos[0] + direction[0] * width, bone_pos[1] + direction[1] * width, bone_pos[2] + direction[2] * width
+        target_bone_pos = bone_pos[0] + direction[0] * width * self_width, bone_pos[1] + direction[
+            1] * width * self_width, bone_pos[2] + direction[2] * width * self_width
         modelId = self._modelPool.malloc(True)
         clientApi.GetEngineCompFactory().CreateModel(levelId).SetTexture(self.binderArgs["texture"], modelId)
         if self.binderArgs["bloom"]:
@@ -135,8 +165,8 @@ class BaseKnifeLightEffect:
         for i in oldList:
             newList.append(i)
         self.knifeList = newList
-        if self.knifeList:
-            while len(self.knifeList) > self.length:
+        if self.knifeList and len(self.knifeList) > self.length:
+            for i in range(int(max((len(self.knifeList) - self.length) / 5.0, 1) + 1)):
                 if not self.destroyKnifeFrag():
                     break
 
@@ -148,21 +178,21 @@ class BaseKnifeLightEffect:
             return True
         return False
 
-    def renderKnifeModel(self, fragModel, nowKnifeFrag, lastKnifeFrag, index, mix_begin_pos, mix_end_pos):
-        Px, Py, Pz = clientApi.GetEngineCompFactory().CreatePos(self.entityId).GetPos()
+    def renderKnifeModel(self, fragModel, nowKnifeFrag, lastKnifeFrag, index, mix_end_pos):
         startColor = self.binderArgs["startColor"]
         endColor = self.binderArgs["endColor"]
-        nowBeginPos = nowKnifeFrag[1]
-        nowEndPos = nowKnifeFrag[2]
-        lastBeginPos = lastKnifeFrag[1]
-        lastEndPos = lastKnifeFrag[2]
-        clientComp.CreateModel(levelId).SetFreeModelPos(fragModel, nowBeginPos[0], nowBeginPos[1], nowBeginPos[2])
+        now_begin_x, now_begin_y, now_begin_z = nowKnifeFrag[1]
+        now_end_x, now_end_y, now_end_z = nowKnifeFrag[2]
+        last_begin_x, last_begin_y, last_begin_z = lastKnifeFrag[1]
+        last_end_x, last_end_y, last_end_z = lastKnifeFrag[2]
+        mix_end_x, mix_end_y, mix_end_z = mix_end_pos
+        clientComp.CreateModel(levelId).SetFreeModelPos(fragModel, now_begin_x, now_begin_y, now_begin_z)
         clientComp.CreateModel(levelId).SetFreeModelScale(fragModel, 1, 1, 1)
         clientComp.CreateModel(levelId).SetFreeModelRot(fragModel, 0, 0, 0)
 
-        last_progress = round(1-(index+3)/float(len(self.knifeList)), 2)
+        last_progress = round(1.0 - (index + 2) / max(float(len(self.knifeList) - 2), 1), 2)
 
-        target_progress = round(1-(index+2)/float(len(self.knifeList)), 2)
+        target_progress = round(1.0 - (index + 1) / max(float(len(self.knifeList) - 2), 1), 2)
 
         start_r, start_g, start_b, start_a = startColor
 
@@ -178,48 +208,18 @@ class BaseKnifeLightEffect:
         end_b = min(max(round(end_b, 2), 0.01), 0.99)
         end_a = min(max(round(end_a, 2), 0.01), 0.99)
 
-        ValueDict = [1000, 3000]
-
-        mix_end_x = max(min(round(mix_end_pos[0] - Px, 2), 9.99), -9.99)*100.0
-        mix_end_y = max(min(round(mix_end_pos[1] - Py, 2), 9.99), -9.99)*100.0
-        mix_end_z = max(min(round(mix_end_pos[2] - Pz, 2), 9.99), -9.99)*100.0
-
-        mix_end_x = abs(mix_end_x) + ValueDict[int(mix_end_x >= 0)]
-        mix_end_y = abs(mix_end_y) + ValueDict[int(mix_end_y >= 0)]
-        mix_end_z = abs(mix_end_z) + ValueDict[int(mix_end_z >= 0)]
-
-        ValueDict = [0.1, 0.3]
-
-        mix_begin_x = max(min(round(mix_begin_pos[0] - Px, 2), 9.99), -9.99)*0.01
-        mix_begin_y = max(min(round(mix_begin_pos[1] - Py, 2), 9.99), -9.99)*0.01
-        mix_begin_z = max(min(round(mix_begin_pos[2] - Pz, 2), 9.99), -9.99)*0.01
-
-        mix_begin_x = abs(mix_begin_x) + ValueDict[int(mix_begin_x >= 0)]
-        mix_begin_y = abs(mix_begin_y) + ValueDict[int(mix_begin_y >= 0)]
-        mix_begin_z = abs(mix_begin_z) + ValueDict[int(mix_begin_z >= 0)]
-
-        now_begin_x = max(min(round(nowBeginPos[0] - Px, 3), 9.999), -9.999)
-        now_begin_y = max(min(round(nowBeginPos[1] - Py, 3), 9.999), -9.999)
-        now_begin_z = max(min(round(nowBeginPos[2] - Pz, 3), 9.999), -9.999)
-
-        now_end_x = max(min(round(nowEndPos[0] - Px, 3), 9.999), -9.999)
-        now_end_y = max(min(round(nowEndPos[1] - Py, 3), 9.999), -9.999)
-        now_end_z = max(min(round(nowEndPos[2] - Pz, 3), 9.999), -9.999)
-
-        last_begin_x = max(min(round(lastBeginPos[0] - Px, 3), 9.999), -9.999)
-        last_begin_y = max(min(round(lastBeginPos[1] - Py, 3), 9.999), -9.999)
-        last_begin_z = max(min(round(lastBeginPos[2] - Pz, 3), 9.999), -9.999)
-
-        last_end_x = max(min(round(lastEndPos[0] - Px, 3), 9.999), -9.999)
-        last_end_y = max(min(round(lastEndPos[1] - Py, 3), 9.999), -9.999)
-        last_end_z = max(min(round(lastEndPos[2] - Pz, 3), 9.999), -9.999)
-
-        ValueDict = [-1, 1]
-
-        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 1, (now_begin_x+start_r*0.0001*ValueDict[int(now_begin_x >= 0)], now_begin_y+start_g*0.0001*ValueDict[int(now_begin_y >= 0)], now_begin_z+start_b*0.0001*ValueDict[int(now_begin_z >= 0)], last_progress*100.0+target_progress))
-        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 2, (now_end_x+end_r*0.0001*ValueDict[int(now_end_x >= 0)], now_end_y+end_g*0.0001*ValueDict[int(now_end_y >= 0)], now_end_z+end_b*0.0001*ValueDict[int(now_end_z >= 0)], mix_end_x+mix_begin_x))
-        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 3, (last_begin_x+start_a*0.0001*ValueDict[int(last_begin_x >= 0)], last_begin_y+end_a*0.0001*ValueDict[int(last_begin_y >= 0)], last_begin_z, mix_end_y+mix_begin_y))
-        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 4, (last_end_x, last_end_y, last_end_z, mix_end_z+mix_begin_z))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 1, (
+        now_end_x - now_begin_x, now_end_y - now_begin_y, now_end_z - now_begin_z,
+        last_progress * 100.0 + target_progress))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 2, (
+        last_begin_x - now_begin_x, last_begin_y - now_begin_y, last_begin_z - now_begin_z,
+        start_r * 1000.0 + start_g * 10.0 + start_b * 0.1))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 3, (
+        last_end_x - now_begin_x, last_end_y - now_begin_y, last_end_z - now_begin_z,
+        end_r * 1000.0 + end_g * 10.0 + end_b * 0.1))
+        clientComp.CreateModel(levelId).SetExtraUniformValue(fragModel, 4, (
+        mix_end_x - now_begin_x, mix_end_y - now_begin_y, mix_end_z - now_begin_z, start_a * 100.0 + end_a))
+        pass
 
 class BaseKnifeLightEffectRenderer(QBaseEntityComp):
     """ 刀光特效渲染器通用组件类 管理目标实体持有N个刀光 """
@@ -349,9 +349,11 @@ class BaseKnifeLightEffectRenderer(QBaseEntityComp):
         customArgs["length"] = customArgs.get("length", 0.7)
         customArgs["startColor"] = customArgs.get("startColor", (1, 1, 1, 1))
         customArgs["endColor"] = customArgs.get("endColor", (1, 1, 1, 0))
+        customArgs["knifeLightModel"] = customArgs.get("knifeLightModel", 0)
         customArgs["texture"] = customArgs.get("texture", "knife_light")
         customArgs["bloom"] = customArgs.get("bloom", False)
         customArgs["rotate"] = customArgs.get("rotate", (0, 0))
+        customArgs["motion"] = customArgs.get("motion", (0, 0, 0))
         binder.customArgs = customArgs
         self._binderMap[boneName] = binder
         binder.onCreate()
