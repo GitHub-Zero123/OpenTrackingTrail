@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from QuClientApi.ui.screenNode import ScreenNode as BaseScreenNode
+
 from mod.client.ui.screenNode import ScreenNode
 import mod.client.extraClientApi as clientApi
 from Util import ModDirName, RandomUid, ExceptionHandling
@@ -51,7 +51,7 @@ class QuGridObject(object):
         if self.DelayUpdate:
             self.uiNode.UpdateScreen(True)
 
-class EasyScreenNodeCls(BaseScreenNode):
+class EasyScreenNodeCls(ScreenNode):
     """ 简易界面类 可继承并开发 """
     UiName = "Ui_"+RandomUid()              # Ui名字 默认随机
     UiDef = None                            # 用来标识json ui的命名空间和界面名 如 zeroui.main

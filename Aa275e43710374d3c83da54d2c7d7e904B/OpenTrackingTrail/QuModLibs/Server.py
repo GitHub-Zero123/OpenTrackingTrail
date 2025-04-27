@@ -7,17 +7,13 @@ from Util import (
     _eventsRedirect,
     ObjectConversion as __ObjectConversion,
 )
-if 1 > 2:
-    # 阻止补全库被真正import降低运行时开销
-    import QuServerApi.extraServerApi as extraServerApi
-    from QuServerApi.Events import Events as _EventsPrompt
 from IN import ModDirName
 import mod.server.extraServerApi as __extraServerApi
-serverApi = __extraServerApi                        # type: extraServerApi
+serverApi = __extraServerApi                        
 TickEvent = "OnScriptTickServer"
 levelId = serverApi.GetLevelId()
-System = serverApi.GetSystem("Minecraft","game")    # type: extraServerApi
-Events = _eventsRedirect                            # type: type[_EventsPrompt]
+System = serverApi.GetSystem("Minecraft","game")    
+Events = _eventsRedirect                            
 
 def getOwnerPlayerId():
     # type: () -> str | None
