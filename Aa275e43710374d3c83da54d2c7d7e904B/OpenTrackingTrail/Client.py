@@ -14,7 +14,7 @@ class TestKLRenderer(BaseKnifeLightEffectRenderer):
         if True:    #  在此处编写你的渲染条件 为了测试 这里始终开启
             # ["rightarm", "rightitem"] 为绑定的骨骼/定位器名字 可根据实际需求在模型上调整
             # createBinder需要一个唯一key名 确保tick下重复调用不会重复创建 实现实时更新渲染开关
-            self.createBinder("default", ["rightarm", "rightitem"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 5, "width": 3, "offset": 0, "texture": "open_knife_light", "bloom": False})
+            self.createBinder("default", ["rightarm", "rightitem"], {"startColor": (1, 1, 1, 1), "endColor": (1, 1, 1, 0), "length": 2, "width": 3, "offset": 0, "texture": "open_knife_light", "bloom": False})
         else:
             self.removeAllBinder()
 
