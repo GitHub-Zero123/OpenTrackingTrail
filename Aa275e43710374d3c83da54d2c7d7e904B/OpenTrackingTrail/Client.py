@@ -3,7 +3,7 @@ from QuModLibs.Client import *
 from Modules.TrackingTrail.Client import BaseKnifeLightEffectRenderer
 lambda: "By 棱花 && KID团队 请在遵循协议的前提下使用"
 lambda: "OpenTrackingTrail Client"
-# 2025/02/08
+# 2025/04/27
 
 # 顺带给生物也绑定一份
 @BaseKnifeLightEffectRenderer.regEntity("minecraft:husk")
@@ -23,4 +23,4 @@ def AddPlayerCreatedClientEvent(args={}):
     # 截至当前版本QuModLibs暂未提供组件快捷玩家注册装饰器 需自行监听
     TestKLRenderer().bind(args["playerId"])
 
-# PS: 为避免多MOD冲突问题 若需大量魔改 请重新命名模型/材质/着色器相关名称 避免ODR问题
+# PS: 为避免多MOD冲突问题 若需大量魔改 请重新命名模型/材质/着色器相关名称 避免冲突。
